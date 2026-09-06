@@ -1,0 +1,22 @@
+# 비밀 — 실수로라도 올라가지 않게
+*토큰*
+*token*
+.env
+.env.*
+*.pem
+*.key
+
+# 생성물
+*.pdf
+!README*.pdf
+
+# OS / 편집기
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# 파이썬
+__pycache__/
+*.pyc
