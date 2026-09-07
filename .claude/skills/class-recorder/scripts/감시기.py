@@ -41,7 +41,8 @@ DEFAULTS = {
     "요일": [0, 1, 2, 3, 4],           # 0=월 … 6=일
     "시작시각": "09:30",
     "종료시각": "19:30",
-    "여유_분": 10,                      # Zep이 사라진 뒤 이만큼 지나야 중지
+    "여유_분": 25,        # Zep이 사라진 뒤 이만큼 지나야 중지
+    "알림_분": 5,         # 이만큼 넘게 안 보일 때만 로그에 남긴다(탭 전환 무시)
     "폴링_초": 20,
     "obs_경로": r"C:\Program Files\obs-studio\bin\64bit\obs64.exe",
     "obs_호스트": "localhost",
@@ -242,6 +243,7 @@ def 한번판단(cfg, obs: OBS, state: dict, dry: bool):
 
     if z:
         state["사라진시각"] = None
+        state["사라짐알림"] = False
 
         if rec is True:
             state["연결경고"] = False
@@ -282,18 +284,36 @@ def 한번판단(cfg, obs: OBS, state: dict, dry: bool):
     # Zep이 안 보인다
     if not state["내가시작"]:
         return                      # 내가 켠 게 아니면 건드리지 않는다
+
     if state["사라진시각"] is None:
         state["사라진시각"] = now
-        log(f"Zep이 안 보입니다 — {cfg['여유_분']}분 더 기다립니다")
-        return
-    if (now - state["사라진시각"]).total_seconds() >= cfg["여유_분"] * 60:
+        state["끊김"] = state.get("끊김", 0) + 1
+        return          # 탭을 잠깐 옮긴 것일 수 있다 — 아직 알리지 않는다
+
+    안보인지 = (now - state["사라진시각"]).total_seconds() / 60
+
+    # 짧은 깜빡임(탭 전환)은 기록하지 않는다. 실제로 오래 사라졌을 때만 남긴다.
+    if 안보인지 >= cfg["알림_분"] and not state.get("사라짐알림"):
+        state["사라짐알림"] = True
+        log(f"Zep이 {cfg['알림_분']}분 넘게 안 보입니다 — "
+            f"{cfg['여유_분']}분까지 기다립니다")
+
+    if 안보인지 >= cfg["여유_분"]:
         if dry:
             log("[가정] 여유 시간이 지나 중지하겠습니다")
         else:
             p = obs.중지()
             log(f"Zep 없음 {cfg['여유_분']}분 경과 — 녹화 중지 {p or ''}")
+        # 감지가 몇 번 끊겼는지 한 줄로 남긴다. 잦으면 Zep을 별도 창으로 둘 때다.
+        끊김 = state.get("끊김", 0)
+        if 끊김 > 1:
+            log(f"참고 — 이번 녹화 중 Zep 감지가 {끊김}회 끊겼습니다 "
+                f"(여유 {cfg['여유_분']}분이 막아 줬습니다). "
+                f"잦으면 Zep을 별도 창으로 띄워 두세요")
         state["내가시작"] = False
         state["사라진시각"] = None
+        state["사라짐알림"] = False
+        state["끊김"] = 0
 
 
 # ──────────────────────────────── main ────────────────────────────────
