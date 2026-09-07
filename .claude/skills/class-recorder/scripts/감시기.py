@@ -33,6 +33,7 @@ except (AttributeError, OSError):
 HERE = Path(__file__).resolve().parent
 CONFIG = HERE / "설정.json"
 LOGDIR = HERE / "로그"
+STANDBY = HERE / "대기중.flag"   # 녹화.py 대기/해제 가 만들고 지운다
 WEEKDAYS = "월화수목금토일"
 
 DEFAULTS = {
@@ -211,6 +212,19 @@ def 상태보기(cfg, obs: OBS):
 def 한번판단(cfg, obs: OBS, state: dict, dry: bool):
     """state = {'사라진시각': datetime|None, '내가시작': bool}"""
     now = datetime.now()
+
+    # 사람이 '녹화.py 대기'로 재워 뒀으면 아무것도 하지 않는다.
+    # (손으로 중지한 걸 20초 뒤에 다시 켜 버리면 곤란하다)
+    if STANDBY.exists():
+        if not state.get("대기알림"):
+            state["대기알림"] = True
+            log("대기 상태입니다 — 자동 시작·중지를 하지 않습니다 "
+                "(깨우기: 녹화.py 해제)")
+        return
+    if state.get("대기알림"):
+        state["대기알림"] = False
+        log("대기 해제 — 자동 판단을 다시 시작합니다")
+
     안 = 감시시간대(cfg, now)
     z = zep_보임(cfg["zep_키워드"])
 
@@ -231,7 +245,14 @@ def 한번판단(cfg, obs: OBS, state: dict, dry: bool):
 
         if rec is True:
             state["연결경고"] = False
-            return                          # 이미 녹화 중 — 건드리지 않는다
+            # 감시기를 도중에 재시작했는데 이미 녹화 중이고 Zep도 보인다면,
+            # 그건 이 수업 녹화다. 이어받아야 끝날 때 자동으로 멈춘다.
+            # (Zep이 안 보이는 녹화는 남의 것이므로 손대지 않는다)
+            if not state["내가시작"] and not state.get("인수함"):
+                state["인수함"] = True
+                state["내가시작"] = True
+                log(f"이미 녹화 중이고 Zep도 보입니다 — 이어받습니다 ({z[:40]})")
+            return                          # 녹화 자체는 건드리지 않는다
 
         if rec is False:                    # 연결됨 · 멈춰 있음 → 시작
             state["연결경고"] = False

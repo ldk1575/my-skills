@@ -28,3 +28,4 @@ __pycache__/
 # class-recorder — 비밀번호가 들어 있다
 .claude/skills/class-recorder/scripts/설정.json
 .claude/skills/class-recorder/scripts/로그/
+.claude/skills/class-recorder/scripts/대기중.flag
