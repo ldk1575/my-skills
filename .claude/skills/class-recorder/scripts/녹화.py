@@ -5,20 +5,27 @@
     python 녹화.py 정지        일시정지  ← 쉬는 시간엔 이것
     python 녹화.py 재개        다시 시작
     python 녹화.py 토글        정지 ↔ 재개 (한 손가락으로)
-    python 녹화.py 시작        녹화 시작
+    python 녹화.py 쉬기        교시 끝 — 파일 저장하고 잠시 멈춤  ← 쉬는 시간엔 이것
+    python 녹화.py 시작        다음 교시 — 새 파일로 녹화 시작
     python 녹화.py 중지        녹화 끝내고 파일 저장
-    python 녹화.py 대기        감시기 잠재우기 (자동 시작 안 함)
+    python 녹화.py 대기        감시기 잠재우기 (해제할 때까지)
     python 녹화.py 해제        감시기 깨우기
 
-왜 '중지'가 아니라 '정지'인가
-    중지는 파일을 끊는다 — 한 수업이 조각조각 난다. 게다가 Zep이 떠 있으면
-    감시기가 20초 안에 다시 켠다.
-    일시정지는 같은 파일을 이어 쓰고, 감시기도 '녹화 중'으로 보므로 건드리지 않는다.
-    쉬는 시간에는 '정지'를 쓴다.
+두 가지 방식이 있다 — 목적이 다르다
+
+  교시별로 파일을 나누고 싶다  →  쉬기 / 시작
+      쉬기는 파일을 저장하고 멈춘다. 쉬는 시간이 파일에 안 들어가므로
+      복습할 때 바로 본론이다. '시작'을 깜빡해도 쉬기_분 뒤에 감시기가
+      스스로 깨어나므로 수업을 놓치지 않는다.
+
+  한 파일로 이어 두고 싶다    →  정지 / 재개
+      일시정지는 같은 파일을 이어 쓴다. 조용한 구간은 나중에 무음제거로
+      잘라내면 된다.
 """
 
 import json
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 try:
@@ -36,6 +43,7 @@ STANDBY = HERE / "대기중.flag"      # 있으면 감시기가 아무 일도 �
     "토글": "toggle", "t": "toggle",
     "시작": "start", "s": "start",
     "중지": "stop", "끝": "stop", "종료": "stop",
+    "쉬기": "break", "휴식": "break", "b": "break",
     "대기": "standby", "해제": "wake",
     "상태": "status", "": "status",
 }
@@ -97,6 +105,7 @@ def main():
         print("감시기를 깨웠습니다 — Zep이 보이면 다시 자동으로 녹화합니다.")
         return 0
 
+    cfg = json.loads(CONFIG.read_text(encoding="utf-8")) if CONFIG.exists() else {}
     c = 접속()
     s = c.get_record_status()
     쉼 = getattr(s, "output_paused", False)
@@ -137,12 +146,29 @@ def main():
               + f" · {s.output_timecode[:8]} 지점")
         return 0
 
+    if 명령 == "break":
+        분 = cfg.get("쉬기_분", 15)
+        if s.output_active:
+            r = c.stop_record()
+            print(f"파일을 저장했습니다 · {s.output_timecode[:8]}")
+            print(f"  {getattr(r, 'output_path', '')}")
+        else:
+            print("녹화 중이 아닙니다 — 대기만 걸어 둡니다.")
+        만료 = datetime.now() + timedelta(minutes=분)
+        STANDBY.write_text(만료.isoformat(), encoding="utf-8")
+        print()
+        print(f"{분}분간 자동 녹화를 멈춥니다 (~{만료:%H:%M} 까지)")
+        print("다음 교시에 '시작' — 깜빡해도 그 시각에 알아서 켜집니다")
+        return 0
+
     if 명령 == "start":
+        깨움 = STANDBY.exists()
+        STANDBY.unlink(missing_ok=True)      # 쉬는 중이었으면 먼저 깨운다
         if s.output_active:
             print(f"이미 녹화 중입니다 · {s.output_timecode[:8]}")
             return 0
         c.start_record()
-        print("녹화를 시작했습니다.")
+        print("새 파일로 녹화를 시작했습니다." + ("  (쉬기 해제)" if 깨움 else ""))
         return 0
 
     if 명령 == "stop":

@@ -214,15 +214,31 @@ def 한번판단(cfg, obs: OBS, state: dict, dry: bool):
     """state = {'사라진시각': datetime|None, '내가시작': bool}"""
     now = datetime.now()
 
-    # 사람이 '녹화.py 대기'로 재워 뒀으면 아무것도 하지 않는다.
+    # 사람이 '쉬기'나 '대기'로 재워 뒀으면 아무것도 하지 않는다.
     # (손으로 중지한 걸 20초 뒤에 다시 켜 버리면 곤란하다)
+    #
+    # '쉬기'는 만료 시각을 적어 둔다 — 그 시각이 지나면 스스로 깨어난다.
+    # 다음 교시에 '시작'을 깜빡해도 수업을 놓치지 않게 하려는 안전장치다.
     if STANDBY.exists():
-        if not state.get("대기알림"):
-            state["대기알림"] = True
-            log("대기 상태입니다 — 자동 시작·중지를 하지 않습니다 "
-                "(깨우기: 녹화.py 해제)")
-        return
-    if state.get("대기알림"):
+        만료 = None
+        try:
+            글 = STANDBY.read_text(encoding="utf-8").strip()
+            만료 = datetime.fromisoformat(글) if 글 else None
+        except (OSError, ValueError):
+            만료 = None
+
+        if 만료 and now >= 만료:
+            STANDBY.unlink(missing_ok=True)
+            state["대기알림"] = False
+            log("쉬는 시간이 끝났습니다 — 자동 판단을 다시 시작합니다")
+        else:
+            if not state.get("대기알림"):
+                state["대기알림"] = True
+                남 = f"{(만료 - now).total_seconds() / 60:.0f}분 뒤 자동 복귀" \
+                    if 만료 else "해제할 때까지"
+                log(f"쉬는 중입니다 — 자동 시작·중지를 하지 않습니다 ({남})")
+            return
+    elif state.get("대기알림"):
         state["대기알림"] = False
         log("대기 해제 — 자동 판단을 다시 시작합니다")
 

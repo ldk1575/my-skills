@@ -45,6 +45,7 @@ function 녹화상태 { python `$Global:녹화스크립트 상태 }
 function 정지     { python `$Global:녹화스크립트 정지 }
 function 재개     { python `$Global:녹화스크립트 재개 }
 function 토글     { python `$Global:녹화스크립트 토글 }
+function 쉬기     { python `$Global:녹화스크립트 쉬기 }
 function 녹화시작 { python `$Global:녹화스크립트 시작 }
 function 녹화중지 { python `$Global:녹화스크립트 중지 }
 function 감시대기 { python `$Global:녹화스크립트 대기 }
@@ -68,7 +69,9 @@ Write-Host '  녹화상태   지금 상태'
 Write-Host '  정지       일시정지  ← 쉬는 시간엔 이것'
 Write-Host '  재개       다시 시작'
 Write-Host '  토글       정지 <-> 재개'
-Write-Host '  녹화시작 / 녹화중지'
+Write-Host '  쉬기       교시 끝 - 파일 저장하고 잠시 멈춤'
+Write-Host '  녹화시작   다음 교시 - 새 파일로 시작'
+Write-Host '  녹화중지'
 Write-Host '  감시대기 / 감시해제   자동 판단 끄기·켜기'
 Write-Host ''
 Write-Host '지금 창에서 바로 쓰려면:'
