@@ -55,21 +55,36 @@ def main() -> int:
 
     raw = path.read_text(encoding="utf-8")
 
-    # 낭독 구간만 — 첫 타임스탬프 제목부터 '예상 질문 대비' 전까지
-    body = re.split(r"^#\s*예상 질문", raw, maxsplit=1, flags=re.M)[0]
-    parts = re.split(r"^##\s*\d+:\d+", body, maxsplit=1, flags=re.M)
-    if len(parts) < 2:
+    # 낭독 구간만 — 첫 타임스탬프 제목(## 0:00 …)부터,
+    # 타임스탬프가 아닌 제목(## 분량 확인 / ## 예상 질문 대비 / ## 발표 전 점검 …)이 나오기 전까지.
+    # 제목 이름을 외워 두지 않는다. "시각 제목이 아니면 낭독 구간이 끝난 것"으로 본다.
+    time_head = re.compile(r"^#{1,3}\s*\d+:\d{2}")
+    other_head = re.compile(r"^#{1,3}\s+\S")
+
+    spoken, started = [], False
+    for ln in raw.splitlines():
+        if time_head.match(ln):
+            started = True
+            continue              # 구간 제목 자체는 읽지 않는다
+        if started and other_head.match(ln):
+            break                 # 낭독 구간 끝
+        if started:
+            spoken.append(ln)
+
+    if not started:
         print("낭독 구간(## 0:00 — …)을 찾지 못했습니다.", file=sys.stderr)
         return 1
-    body = parts[1]
 
-    lines = [
-        ln for ln in body.splitlines()
-        if ln.strip() and not ln.startswith(("#", ">", "---"))
-    ]
-
+    body = "\n".join(spoken)
+    lines = [ln for ln in spoken if ln.strip() and not ln.startswith((">", "---"))]
     total = count("\n".join(lines))
-    cut = count("\n".join(ln for ln in lines if CUT_MARK in ln))
+
+    # [줄일 때 뺄 곳]은 그 줄만이 아니라 **문단 전체**를 뺀다
+    cut_paras = [
+        p for p in re.split(r"\n\s*\n", body)
+        if CUT_MARK in p
+    ]
+    cut = count("\n".join(cut_paras))
 
     def secs(chars: int) -> float:
         return chars / cpm * 60
