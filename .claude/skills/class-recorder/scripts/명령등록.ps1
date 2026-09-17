@@ -48,6 +48,7 @@ function 토글     { python `$Global:녹화스크립트 토글 }
 function 쉬기     { python `$Global:녹화스크립트 쉬기 }
 function 녹화시작 { python `$Global:녹화스크립트 시작 }
 function 녹화중지 { python `$Global:녹화스크립트 중지 }
+function 녹화중단 { python `$Global:녹화스크립트 중단 }
 function 감시대기 { python `$Global:녹화스크립트 대기 }
 function 감시해제 { python `$Global:녹화스크립트 해제 }
 $End
@@ -71,6 +72,7 @@ Write-Host '  재개       다시 시작'
 Write-Host '  토글       정지 <-> 재개'
 Write-Host '  쉬기       교시 끝 - 파일 저장하고 잠시 멈춤'
 Write-Host '  녹화시작   다음 교시 - 새 파일로 시작'
+Write-Host '  녹화중단   점심·자습 - 파일 저장하고 녹화시작 할 때까지 멈춤'
 Write-Host '  녹화중지'
 Write-Host '  감시대기 / 감시해제   자동 판단 끄기·켜기'
 Write-Host ''

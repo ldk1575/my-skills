@@ -8,6 +8,7 @@
     python 녹화.py 쉬기        교시 끝 — 파일 저장하고 잠시 멈춤  ← 쉬는 시간엔 이것
     python 녹화.py 시작        다음 교시 — 새 파일로 녹화 시작
     python 녹화.py 중지        녹화 끝내고 파일 저장
+    python 녹화.py 중단        점심·자습 — 파일 저장하고 '시작' 할 때까지 멈춤
     python 녹화.py 대기        감시기 잠재우기 (해제할 때까지)
     python 녹화.py 해제        감시기 깨우기
 
@@ -21,6 +22,10 @@
   한 파일로 이어 두고 싶다    →  정지 / 재개
       일시정지는 같은 파일을 이어 쓴다. 조용한 구간은 나중에 무음제거로
       잘라내면 된다.
+
+  점심·자습처럼 길게 조용하다  →  중단 / 시작
+      쉬기와 같지만 15분 뒤 저절로 깨어나지 않는다. '시작'할 때까지 멈춘다.
+      깜빡하고 퇴근해도 오늘 종료시각에 대기가 풀리므로 다음 날은 평소대로 켜진다.
 """
 
 import json
@@ -44,6 +49,7 @@ STANDBY = HERE / "대기중.flag"      # 있으면 감시기가 아무 일도 �
     "시작": "start", "s": "start",
     "중지": "stop", "끝": "stop", "종료": "stop",
     "쉬기": "break", "휴식": "break", "b": "break",
+    "중단": "halt", "점심": "halt", "자습": "halt",
     "대기": "standby", "해제": "wake",
     "상태": "status", "": "status",
 }
@@ -161,6 +167,25 @@ def main():
         print("다음 교시에 '시작' — 깜빡해도 그 시각에 알아서 켜집니다")
         return 0
 
+    if 명령 == "halt":
+        if s.output_active:
+            r = c.stop_record()
+            print(f"파일을 저장했습니다 · {s.output_timecode[:8]}")
+            print(f"  {getattr(r, 'output_path', '')}")
+        else:
+            print("녹화 중이 아닙니다 — 대기만 걸어 둡니다.")
+        # 만료를 오늘 종료시각으로 둔다 — 깜빡해도 다음 날 아침엔 자동 녹화가 돈다
+        h, m = map(int, cfg.get("종료시각", "19:30").split(":"))
+        만료 = datetime.now().replace(hour=h, minute=m, second=0, microsecond=0)
+        if 만료 <= datetime.now():
+            만료 += timedelta(days=1)
+        STANDBY.write_text(만료.isoformat(), encoding="utf-8")
+        print()
+        print("녹화를 중단했습니다 — '시작' 할 때까지 자동으로 켜지지 않습니다")
+        print(f"  (깜빡해도 {만료:%H:%M}에 대기가 풀려 다음 날은 평소대로)")
+        print("다시 수업이 시작되면: 녹화시작")
+        return 0
+
     if 명령 == "start":
         깨움 = STANDBY.exists()
         STANDBY.unlink(missing_ok=True)      # 쉬는 중이었으면 먼저 깨운다
@@ -168,7 +193,7 @@ def main():
             print(f"이미 녹화 중입니다 · {s.output_timecode[:8]}")
             return 0
         c.start_record()
-        print("새 파일로 녹화를 시작했습니다." + ("  (쉬기 해제)" if 깨움 else ""))
+        print("새 파일로 녹화를 시작했습니다." + ("  (대기 해제)" if 깨움 else ""))
         return 0
 
     if 명령 == "stop":
