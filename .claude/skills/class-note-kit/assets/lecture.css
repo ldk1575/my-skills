@@ -1,0 +1,147 @@
+/* class-note-kit — 정리본 조판 스타일
+   2026-09-14 「4. AI는 문서와 사진에서 무엇을 꺼낼까?」 정리본에서 떼어 냈다.
+   HTML 을 산출물로 남기지 않기로 하면서, 회차 간에 물려줄 자리를 여기로 옮겼다.
+   고칠 일이 있으면 이 파일을 고친다 — 직전 회차 파일을 뒤지지 않는다. */
+
+  @page { size: A4; margin: 18mm 16mm 16mm 16mm; }
+
+  @font-face{ font-family:"KoPubWorldBatang_Pro"; font-weight:300; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Batang_Pro%20Light.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldBatang_Pro"; font-weight:500; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Batang_Pro%20Medium.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldBatang_Pro"; font-weight:700; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Batang_Pro%20Bold.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldDotum_Pro"; font-weight:500; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Dotum_Pro%20Medium.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldDotum_Pro"; font-weight:700; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Dotum_Pro%20Bold.otf") format("opentype"); font-display:block; }
+
+  :root{
+    --kr:"KoPubWorldBatang_Pro","KoPubWorld바탕체_Pro","Malgun Gothic",serif;
+    --ink:#1c1f26; --ink-soft:#4a5160; --line:#d9dee6; --line-soft:#eceff4;
+    --accent:#1f4e79; --accent-soft:#eaf1f8;
+    --amber:#8a5a00; --amber-soft:#fdf6e6;
+    --rose:#8f2f3c; --rose-soft:#fdeef0;
+    --green:#1f5f45; --green-soft:#eaf5f0;
+    --code-bg:#f5f7fa;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family:var(--kr); font-weight:500;
+    font-size:10.4pt; line-height:1.80; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  p{ margin:0 0 .62em; text-align:justify; word-break:keep-all; }
+
+  .cover{ height:255mm; display:flex; flex-direction:column; justify-content:center; page-break-after:always; }
+  .cover .eyebrow{ font-size:9.5pt; letter-spacing:.22em; color:var(--accent); font-weight:700; margin-bottom:14mm; }
+  .cover h1{ font-size:29pt; line-height:1.30; margin:0 0 6mm; letter-spacing:-.02em; font-weight:700; }
+  .cover h1 small{ display:block; font-size:14pt; color:var(--ink-soft); font-weight:300; margin-top:4mm; line-height:1.5; }
+  .cover .rule{ width:34mm; height:3px; background:var(--accent); margin:8mm 0 9mm; }
+  .cover .lede{ font-size:11.2pt; color:var(--ink-soft); max-width:126mm; line-height:1.88; }
+  .cover .meta{ margin-top:auto; font-size:9.5pt; color:var(--ink-soft); border-top:1px solid var(--line); padding-top:5mm; }
+  .cover .meta b{ color:var(--ink); font-weight:700; }
+
+  .toc{ page-break-after:always; }
+  .toc h2{ page-break-before:auto; }
+  .toc ol{ list-style:none; padding:0; margin:0; counter-reset:sec; }
+  .toc > ol > li{ counter-increment:sec; padding:1.7mm 0; border-bottom:1px solid var(--line-soft); font-size:10.1pt; font-weight:700; line-height:1.5; }
+  .toc > ol > li::before{ content:counter(sec,decimal-leading-zero); color:var(--accent); font-weight:700; margin-right:5mm; font-variant-numeric:tabular-nums; }
+  .toc ul{ list-style:none; margin:.8mm 0 0 13mm; padding:0; }
+  .toc ul li{ font-size:8.9pt; font-weight:300; color:var(--ink-soft); line-height:1.58; }
+  .toc ul li::before{ content:"·"; margin-right:2.5mm; color:var(--line); }
+
+  h2{
+    page-break-before:always; font-size:17pt; letter-spacing:-.02em; line-height:1.35; font-weight:700;
+    margin:0 0 1mm; padding:0 0 3mm; border-bottom:2px solid var(--accent);
+  }
+  h2 .num{ display:block; font-size:9pt; letter-spacing:.2em; color:var(--accent); font-weight:700; margin-bottom:2mm; }
+  h2 + .kicker{ color:var(--ink-soft); font-size:10pt; margin:3.5mm 0 5mm; font-style:italic; }
+  h3{ font-size:12.2pt; margin:8mm 0 2.5mm; letter-spacing:-.01em; font-weight:700; page-break-after:avoid; }
+  h4{ font-size:10.5pt; margin:5.5mm 0 1.5mm; color:var(--accent); font-weight:700; page-break-after:avoid; }
+
+  ul.body, ol.body{ margin:.4em 0 .9em; padding-left:5.5mm; }
+  ul.body li, ol.body li{ margin-bottom:.42em; padding-left:1mm; }
+  ul.body li::marker{ color:var(--accent); }
+
+  strong{ font-weight:700; }
+  em{ font-style:normal; background:linear-gradient(transparent 62%, #ffe9a8 62%); }
+  .box em, .keyline em, figcaption em, .src em{ background:none; font-style:italic; }
+
+  code{
+    font-family:Consolas,"D2Coding","KoPubWorldDotum_Pro","맑은 고딕",monospace; font-weight:500;
+    font-size:.88em; background:var(--code-bg); padding:.5mm 1.4mm; border-radius:2px; color:#374151;
+  }
+  pre{
+    background:#22272e; color:#e6edf3; padding:4mm 5mm; border-radius:4px;
+    font-family:Consolas,"D2Coding","KoPubWorldDotum_Pro","맑은 고딕",monospace; font-weight:500;
+    font-size:8.8pt; line-height:1.6; white-space:pre-wrap; word-break:break-all;
+    page-break-inside:avoid; margin:2.5mm 0 4mm;
+  }
+  pre.plain{ background:var(--code-bg); color:#2b3138; border:1px solid var(--line); }
+  pre.eq{ background:#fff; color:var(--ink); border:1px solid var(--accent); border-left-width:3px;
+          font-size:9.8pt; line-height:1.9; padding:3.5mm 4.5mm; }
+
+  table{ width:100%; border-collapse:collapse; margin:3mm 0 5mm; font-size:9.3pt; page-break-inside:avoid; }
+  caption{ caption-side:top; text-align:left; font-size:9pt; color:var(--ink-soft); padding-bottom:1.5mm; font-weight:700; }
+  th{ background:var(--accent); color:#fff; font-weight:700; text-align:left; padding:2.2mm 3mm; font-size:9pt; border:1px solid var(--accent); }
+  td{ padding:2.2mm 3mm; border:1px solid var(--line); vertical-align:top; line-height:1.64; }
+  tbody tr:nth-child(even) td{ background:#fafbfc; }
+  td.num{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .box{
+    border-left:3px solid var(--accent); background:var(--accent-soft);
+    padding:3.5mm 4.5mm; margin:4mm 0; page-break-inside:avoid; font-size:9.7pt; line-height:1.74;
+  }
+  .box p:last-child{ margin-bottom:0; }
+  .box .label{ display:block; font-size:8.2pt; letter-spacing:.14em; font-weight:700; color:var(--accent); margin-bottom:1.8mm; }
+  .box.story{ border-left-color:var(--amber); background:var(--amber-soft); }
+  .box.story .label{ color:var(--amber); }
+  .box.warn{ border-left-color:var(--rose); background:var(--rose-soft); }
+  .box.warn .label{ color:var(--rose); }
+  .box.tip{ border-left-color:var(--green); background:var(--green-soft); }
+  .box.tip .label{ color:var(--green); }
+  .box.deep{ border-left-color:#6b7280; background:#f6f7f9; font-size:9pt; line-height:1.70; font-weight:300; }
+  .box.deep .label{ color:#6b7280; font-weight:700; }
+  .box ul.body li{ margin-bottom:.34em; }
+
+  .keyline{
+    border:1px solid var(--accent); border-left-width:3px; padding:4mm 5mm; margin:5mm 0;
+    page-break-inside:avoid; background:#fff;
+  }
+  .keyline .label{ display:block; font-size:8.2pt; letter-spacing:.14em; font-weight:700; color:var(--accent); margin-bottom:2mm; }
+  .keyline p{ font-size:10.8pt; margin:0; line-height:1.72; }
+
+  figure{ margin:5mm 0; page-break-inside:avoid; text-align:center; }
+  figure svg{ max-width:100%; height:auto; }
+  figcaption{ font-size:8.7pt; color:var(--ink-soft); margin-top:2mm; font-weight:300; text-align:center; line-height:1.6; }
+
+  .src{ font-size:8.6pt; color:var(--ink-soft); font-weight:300; }
+  .refs{ font-size:9pt; line-height:1.85; }
+  .refs li{ margin-bottom:2mm; }
+
+  .check{ list-style:none; padding-left:0; margin:.4em 0 .9em; }
+  .check li{ margin-bottom:.5em; padding-left:7mm; text-indent:-7mm; }
+  .check li::before{ content:""; display:inline-block; width:2.7mm; height:2.7mm; border:1px solid var(--accent); margin-right:2.5mm; vertical-align:-0.2mm; }
+
+  .note-front{
+    border:1px dashed var(--line); background:#fbfcfd; padding:3.2mm 4.5mm; margin:4.5mm 0 0;
+    font-size:8.4pt; color:var(--ink-soft); line-height:1.70; font-weight:300;
+  }
+  .note-front b{ font-weight:700; }
+
+  /* ---------- 원문 도식 — 노드의 SVG를 그대로 가져온 것 ---------- */
+  .nodefig{ margin:5.5mm 0; page-break-inside:avoid; text-align:center; }
+  .nodefig svg{ max-width:100%; height:auto; }
+  /* 글자만 본문 글꼴에 맞춘다 — 도형·색·배치는 원문 그대로 */
+  .nodefig svg text, .nodefig svg tspan{ font-family:var(--kr) !important; }
+  .nodefig figcaption{ font-size:8.7pt; color:var(--ink-soft); margin-top:2mm; font-weight:300; line-height:1.6; }
+
+  /* ---------- 원문 사진 ---------- */
+  .nodephoto{ margin:5.5mm 0; page-break-inside:avoid; text-align:center; }
+  .nodephoto img{ max-width:100%; max-height:78mm; height:auto; border:1px solid var(--line); border-radius:3px; }
+  .nodephoto figcaption{
+    font-size:8.5pt; color:var(--ink-soft); font-weight:300; line-height:1.72;
+    margin-top:2.2mm; text-align:left;
+  }
+  .nodephoto figcaption b{ font-weight:700; color:var(--ink); }

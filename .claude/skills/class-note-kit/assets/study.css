@@ -1,0 +1,145 @@
+/* class-note-kit — 학습템플릿 조판 스타일
+   2026-09-14 「4. AI는 문서와 사진에서 무엇을 꺼낼까?」 정리본에서 떼어 냈다.
+   HTML 을 산출물로 남기지 않기로 하면서, 회차 간에 물려줄 자리를 여기로 옮겼다.
+   고칠 일이 있으면 이 파일을 고친다 — 직전 회차 파일을 뒤지지 않는다. */
+
+  @page { size: A4; margin: 16mm 15mm 15mm 15mm; }
+
+  /* 글꼴 직접 지정 — 시스템 폰트 목록으로 KoPub 이 해석되지 않는 경우가 있어 파일 경로로 건다. */
+  @font-face{ font-family:"KoPubWorldBatang_Pro"; font-weight:300; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Batang_Pro%20Light.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldBatang_Pro"; font-weight:500; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Batang_Pro%20Medium.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldBatang_Pro"; font-weight:700; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Batang_Pro%20Bold.otf") format("opentype"); font-display:block; }
+  @font-face{ font-family:"KoPubWorldDotum_Pro"; font-weight:500; font-style:normal;
+    src:url("file:///C:/Users/ldk15/AppData/Local/Microsoft/Windows/Fonts/KoPubWorld%20Dotum_Pro%20Medium.otf") format("opentype"); font-display:block; }
+
+  :root{
+    /* KoPubWorld바탕체_Pro — Light(300)/Medium(500)/Bold(700).
+       Medium 이 CSS 400 이 아니라 500 이므로 본문 weight 는 500 으로 둔다. */
+    --kr:"KoPubWorldBatang_Pro","KoPubWorld바탕체_Pro","KoPub바탕체_Pro","Malgun Gothic",serif;
+
+    --ink:#1c1f26;
+    --ink-soft:#4a5160;
+    --line:#d9dee6;
+    --line-soft:#eceff4;
+    --accent:#1f4e79;
+    --accent-soft:#eaf1f8;
+    --amber:#8a5a00;
+    --amber-soft:#fdf6e6;
+    --green:#1f5f45;
+    --green-soft:#eaf5f0;
+    --rose:#8f2f3c;
+    --rose-soft:#fdeef0;
+    --code-bg:#f5f7fa;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:var(--kr);
+    font-weight:500;
+    font-size:10.2pt; line-height:1.78; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  p{ margin:0 0 .55em; word-break:keep-all; }
+  code{
+    font-family:Consolas,"D2Coding","KoPubWorldDotum_Pro","KoPubWorld돋움체_Pro","맑은 고딕",Menlo,monospace;
+    font-weight:500; font-size:.88em;
+    background:var(--code-bg); padding:.4mm 1.3mm; border-radius:2px; color:#374151;
+  }
+  strong{ font-weight:700; }
+  em{ font-style:italic; color:var(--ink-soft); }
+
+  /* 머리말 */
+  .head{ border-bottom:2px solid var(--accent); padding-bottom:4mm; margin-bottom:6mm; }
+  .head .eyebrow{ font-size:8.6pt; letter-spacing:.2em; color:var(--accent); font-weight:700; }
+  .head h1{ font-size:19.5pt; margin:2.5mm 0 2mm; letter-spacing:-.02em; font-weight:700; line-height:1.35; }
+  .head .sub{ font-size:9.4pt; color:var(--ink-soft); font-weight:300; }
+
+  /* 섹션 바 */
+  h2{
+    background:var(--accent); color:#fff; font-size:11.6pt; font-weight:700;
+    padding:2.2mm 4mm; border-radius:3px; margin:8mm 0 3.5mm;
+    page-break-after:avoid; letter-spacing:-.01em;
+  }
+  h2:first-of-type{ margin-top:0; }
+  h3{ font-size:10.6pt; margin:5.5mm 0 1.5mm; color:var(--accent); font-weight:700; page-break-after:avoid; }
+
+  ol.body, ul.body{ margin:.3em 0 .8em; padding-left:6mm; }
+  ol.body > li, ul.body > li{ margin-bottom:.6em; }
+  ol.body ul{ margin:.25em 0 0; padding-left:5mm; list-style:none; }
+  ol.body ul li{ font-size:9.4pt; color:var(--ink-soft); font-weight:300; }
+  ol.body ul li::before{ content:"– "; color:var(--line); }
+  ul.body li::marker, ol.body li::marker{ color:var(--accent); font-weight:700; }
+
+  /* 역할 박스 */
+  .role{ display:flex; gap:4mm; margin:2mm 0 1mm; }
+  .role div{
+    flex:1; border:1px solid var(--line); border-radius:3px;
+    padding:3mm 4mm; font-size:9.6pt; background:#fbfcfd;
+  }
+  .role b{ color:var(--accent); margin-right:3mm; }
+  .role .fill{ display:inline-block; border-bottom:1px solid var(--line); min-width:34mm; }
+
+  /* 콜아웃 */
+  .co{
+    border-left:3px solid var(--accent); background:var(--accent-soft);
+    padding:3.2mm 4.2mm; margin:3.5mm 0; page-break-inside:avoid;
+  }
+  .co > .t{
+    display:block; font-weight:700; font-size:10.2pt; color:var(--accent);
+    margin-bottom:1.8mm; line-height:1.5;
+  }
+  .co ul{ margin:0; padding-left:5mm; }
+  .co ul li{ margin-bottom:.46em; font-size:9.4pt; line-height:1.70; }
+  .co ul li:last-child{ margin-bottom:0; }
+  .co ul li::marker{ color:var(--accent); }
+  .co.warn{ border-left-color:var(--rose); background:var(--rose-soft); }
+  .co.warn > .t{ color:var(--rose); }
+  .co.warn ul li::marker{ color:var(--rose); }
+  .co.mine{ border-left-color:var(--green); background:var(--green-soft); }
+  .co.mine > .t{ color:var(--green); }
+  .co.mine ul li::marker{ color:var(--green); }
+
+  .oneline{
+    border:1px solid var(--green); border-left-width:3px; background:var(--green-soft);
+    padding:3.5mm 4.5mm; margin:4mm 0; page-break-inside:avoid;
+  }
+  .oneline .t{ display:block; font-size:8.2pt; letter-spacing:.14em; font-weight:700; color:var(--green); margin-bottom:1.8mm; }
+  .oneline p{ margin:0; font-size:10.4pt; line-height:1.72; }
+
+  /* 질문 */
+  .q{
+    font-weight:700; font-size:10.6pt; margin:6mm 0 2mm;
+    padding-left:7mm; text-indent:-7mm; page-break-after:avoid;
+  }
+  .q::before{ content:"Q"; display:inline-block; width:7mm; color:var(--accent); }
+  .a{
+    border-left:3px solid var(--amber); background:var(--amber-soft);
+    padding:3.4mm 4.4mm; margin:2mm 0 4mm; font-size:9.5pt; line-height:1.74;
+  }
+  .a h4{ font-size:9.8pt; margin:3.2mm 0 1.2mm; color:var(--amber); font-weight:700; }
+  .a h4:first-child{ margin-top:0; }
+  .a ul{ margin:.2em 0 .5em; padding-left:5mm; }
+  .a ul li{ margin-bottom:.4em; }
+  .a ul li::marker{ color:var(--amber); }
+  .a ol{ margin:.2em 0 .5em; padding-left:5.5mm; }
+  .a ol li{ margin-bottom:.4em; }
+  .a ol li::marker{ color:var(--amber); font-weight:700; }
+  .a p:last-child, .a ul:last-child, .a ol:last-child{ margin-bottom:0; }
+  .a .lead{ font-size:10pt; }
+
+  /* 회고 */
+  .rf{
+    border:1px solid var(--line); border-radius:3px; background:#fbfcfd;
+    padding:3.6mm 4.6mm; margin:3mm 0; font-size:9.5pt; line-height:1.76;
+    page-break-inside:avoid;
+  }
+  .rf .t{ display:block; font-weight:700; color:var(--accent); margin-bottom:1.5mm; }
+  .rf p{ margin:0; }
+
+  .foot{
+    margin-top:9mm; border-top:1px solid var(--line); padding-top:3.5mm;
+    font-size:8.4pt; color:var(--ink-soft); line-height:1.7; font-weight:300;
+  }
