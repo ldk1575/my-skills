@@ -126,6 +126,121 @@ im.convert("RGB").save(p, "JPEG", quality=85, optimize=True)
 
 ---
 
+## 2-2. 인터랙티브 그림(iframe) 추출 — 2026-10-27 노드부터
+
+**그림이 인라인 SVG 가 아니라 `<iframe srcdoc>` 로 들어오는 노드가 있다.**
+「그림으로 보기」 카드(제목·설명·SVG·범례, 때로 `다음 ▶` 버튼이나 고르기 버튼)가 통째로 iframe 안의 HTML 이다.
+2-1 절의 `main.querySelectorAll('svg')` 는 **iframe 안을 못 보므로 이 그림이 통째로 빠진다.**
+10/27 「LangGraph로 에이전트 워크플로 설계하기」에서 실제로 13개가 빠졌고, 그날은 사용자 캡처 24장으로 메웠다.
+
+### 강마다 iframe 을 센다
+
+강을 열고(토글을 펼친 뒤) **2-1 절과 함께 반드시** 이것도 부른다. 채팅 위젯(`Channel chat`)은 뺀다.
+
+```js
+(() => [...document.querySelectorAll('iframe')].filter(f => f.title !== 'Channel chat').map((f, i) => {
+  let prev = null, el = f;                      // 바로 앞 문단 = 그림이 들어갈 자리
+  while (el && !prev) { let s = el.previousElementSibling;
+    while (s && !(s.innerText || '').trim()) s = s.previousElementSibling; if (s) prev = s; el = el.parentElement; }
+  const sd = f.getAttribute('srcdoc');
+  return {i: i + 1, title: f.title, src: f.getAttribute('src'), srcdoc: sd ? sd.length : 0,
+          prev: (prev && prev.innerText || '').trim().split('\n').pop().slice(0, 120)};
+}))()
+```
+
+| 종류 | 알아보는 법 | 할 일 |
+|---|---|---|
+| **`srcdoc` 그림** | `srcdoc` 길이가 0 이 아니다. `title` 이 `D01 그림: …` | 아래 절차로 꺼내 렌더링한다 |
+| **유튜브** | `src` 가 `youtube.com/embed/…` | **제목과 링크만** 남긴다 (`title` + `src` 에서 `?` 앞까지) |
+
+**`prev`(바로 앞 문단의 마지막 줄)를 기록해 둔다.** 정리본에서 그림을 꽂을 자리다.
+**강별 iframe 수도 적어 둔다** — 통과 기준에서 PDF 의 그림 수와 맞춘다.
+
+### `srcdoc` 원문은 바깥 DOM 에서 바로 읽힌다
+
+`iframe.getAttribute('srcdoc')` 이 **HTML 원문 전체**를 준다. iframe 내부 문서(`contentDocument`)에 들어갈 필요가 없다.
+그림 하나가 2만 자 안팎이라 `javascript_tool` 반환값으로 받으면 컨텍스트가 크게 든다. **클립보드로 옮긴다.**
+
+**① 강을 돌며 sessionStorage 에 모은다** — SPA 라 강을 옮겨도 남는다.
+
+```js
+window.__cnk = {
+  // 커리큘럼 제목을 글자 그대로 찾아 누른다. "3. " 같은 번호로만 찾으면 본문 퀴즈 보기("3. State 전체를…")와 겹친다
+  go(t){ [...document.querySelectorAll('div,span,p')]
+           .find(e => e.children.length === 0 && e.textContent.trim() === t).click(); },
+  grab(n){
+    const figs = [...document.querySelectorAll('iframe')].filter(f => f.title !== 'Channel chat').map((f, i) => {
+      let prev = null, el = f;
+      while (el && !prev) { let s = el.previousElementSibling;
+        while (s && !(s.innerText || '').trim()) s = s.previousElementSibling; if (s) prev = s; el = el.parentElement; }
+      return {i: i + 1, title: f.title, src: f.getAttribute('src'),
+              prev: (prev && prev.innerText || '').trim().split('\n').pop().slice(0, 200),
+              srcdoc: f.getAttribute('srcdoc')};            // 원문 전체
+    });
+    const all = JSON.parse(sessionStorage.getItem('__cnk') || '{}');
+    all[n] = {page: document.title, url: location.href, figs};
+    sessionStorage.setItem('__cnk', JSON.stringify(all));
+    return `${n}: iframes=${figs.length} srcdoc=${figs.filter(f => f.srcdoc).length}`;   // 강별 수를 여기서 기록
+  }
+};
+sessionStorage.removeItem('__cnk');
+```
+
+`browser_batch` 로 강마다 `__cnk.go('3. LangGraph의 세 가지 재료: State, Node, Edge')` → `wait 6` → `__cnk.grab(3)` 을 묶는다
+(네 강씩 한 배치). 제목은 0절에서 본 커리큘럼 목록 그대로 쓴다.
+
+**② 복사 버튼을 주입하고 `computer left_click` 으로 누른다.** 복사는 사용자 동작이 있어야 되므로
+`javascript_tool` 안에서 바로 `execCommand('copy')` 를 부르면 안 되고, 버튼을 **실제로 클릭**해야 한다.
+
+```js
+const b = document.createElement('button'); b.id = '__cnk_copy'; b.textContent = 'COPY ALL';
+Object.assign(b.style, {position:'fixed', left:'8px', top:'8px', zIndex:2147483647});
+b.onclick = () => { const t = document.createElement('textarea'); t.value = sessionStorage.getItem('__cnk');
+  document.body.appendChild(t); t.select(); b.textContent = (document.execCommand('copy') ? 'copied ' : 'FAIL ') + t.value.length; t.remove(); };
+document.body.appendChild(b);
+```
+
+`find "COPY ALL"` → `left_click` → 버튼 글자가 `copied 269575` 처럼 바뀌면 성공. 앱이 사용자에게 "페이지가 클립보드에 썼다"고 알린다.
+
+**③ PowerShell 로 받아 스크래치패드에 저장하고, 클립보드를 비운다.**
+
+```powershell
+$t = Get-Clipboard -Raw
+[IO.File]::WriteAllText("<스크래치>\srcdoc\node.json", $t, (New-Object Text.UTF8Encoding $false))
+$t.Length          # 버튼에 찍힌 수와 같아야 한다
+Set-Clipboard -Value " "
+```
+
+> 브라우저 패널에서 `localhost` 로 `fetch` 하는 길은 막혀 있다(Failed to fetch) — 그래서 클립보드다.
+
+### 렌더링 — `scripts/render_srcdoc.py`
+
+```bash
+python -I scripts/render_srcdoc.py <스크래치>/srcdoc/node.json --out <스크래치>/srcdoc/out
+```
+
+헤드리스 Chromium(Playwright)으로 그림마다 `.page` 카드를 찍는다. 유튜브처럼 `srcdoc` 이 없는 항목은
+`kind: embed` 로 제목·링크만 `manifest.json` 에 남는다. 입력으로 srcdoc 을 저장한 `.html` 을 여러 개 줘도 된다.
+
+| 카드 종류 (`manifest.json` 의 `kind`) | 나오는 것 | 정리본에 싣는 법 |
+|---|---|---|
+| `static-svg` — 조작부 없음, 카드 폭 절반 이상의 SVG 가 그림 본체 | 카드 PNG 1장 + **독립 SVG** | **SVG 를 `.nodefig` 로 그대로** (2-1 절 규칙. 글꼴만 `var(--kr)`). 카드의 제목·설명·범례(`text`)는 캡션에 원문 그대로 |
+| `static-html` — 조작부 없음, HTML 타일 + 작은 아이콘 | 카드 PNG 1장 | PNG 를 싣는다 (아이콘만 떼면 뜻이 없다) |
+| `interactive` — 버튼·탭·슬라이더 | **상태마다 PNG** (`_s01`, `_s02` …) | 한 그림으로 묶어 단계 순서대로 2열 격자. 캡션에 "단계 N장을 순서대로" |
+
+- **독립 SVG** 는 클래스·CSS 변수로 칠한 색을 인라인 style 로 풀고, 다른 svg 의 `<defs>`(화살촉)를 복사해 넣은 것이다.
+  **도형·색·배치는 원문 그대로**이고 다시 그린 것이 아니다
+- 조작부 처리 — `다음 ▶` 류는 비활성이 될 때까지 넘기고, 고르기 버튼·탭은 하나씩, 슬라이더는 최소·중간·최대. 같은 화면은 한 번만 남긴다
+- PNG 는 **긴 변 1200px 이하**, 폭은 `--width 880`(사용자 화면의 iframe 폭에 가깝게)
+- 상대경로 `src`/`href` 가 있으면 `<base href="https://learn.modulabs.co.kr/">` 를 넣는다(`--base auto`).
+  **로그인이 필요한 자원은 이걸로도 안 열린다** — `manifest.json` 의 `failed_requests`·`broken_images` 를 보고, 남아 있으면 그 그림만 사용자에게 캡처를 부탁한다
+- 캡션 출처는 **"노드 원문의 인터랙티브 그림(헤드리스 렌더링)"** 이라고 밝힌다
+
+**2026-10-27 검증** — srcdoc 13개 전부 성공(실패 요청 0, 깨진 이미지 0). PNG 24장 = 그날 사용자 캡처 24장과 수가 같고,
+State 스테퍼 5단계·agent/tools 6단계까지 캡처와 내용이 일치했다. 정적 SVG 6개는 단독으로 열어도 화살촉·색이 원본대로 나왔다.
+
+---
+
 ## 3. 접힌 블록을 반드시 펼친다 — 여기가 제일 잘 빠진다
 
 노드에는 접혀 있는 토글이 있다. 제목에 이런 이모지가 붙는다.
@@ -208,5 +323,8 @@ L∝N
 | 수식이 글자 죽처럼 나옴 | MathJax 이중 출력 | 4절 |
 | 로그인 화면만 반복 | 세션 없음 | 사용자에게 직접 로그인 요청. **대신 하지 않는다** |
 | 본문에 도식·사진이 안 보임 | `get_page_text` 는 못 가져온다 | **2-1절** — DOM 에서 직접 꺼낸다 |
+| 「그림으로 보기」가 통째로 없음 | 그림이 `<iframe srcdoc>` 안에 있다 | **2-2절** — `srcdoc` 을 꺼내 `render_srcdoc.py` |
+| `javascript_tool` 안의 `execCommand('copy')` 가 false | 사용자 동작이 없다 | 버튼을 주입하고 `computer left_click` 으로 누른다 |
+| `python -I` 에서 한글 출력이 `UnicodeEncodeError` | `-I` 가 `PYTHONIOENCODING` 을 무시한다 | 스크립트 안에서 `sys.stdout.reconfigure(encoding='utf-8')` |
 | 내려받은 사진이 2KB 남짓 | `thumb/` 주소가 403 | 원본 주소로 재시도. `file` 로 확인 |
 | PDF 에 Arial 같은 글꼴이 섞임 | SVG 내부 글꼴 지정 | `.nodefig svg text { … !important }` |
