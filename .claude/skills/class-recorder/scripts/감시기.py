@@ -111,18 +111,33 @@ def zep_보임(keywords) -> str | None:
 class OBS:
     def __init__(self, cfg):
         self.cfg, self.cl = cfg, None
+        self.띄운시각 = 0.0
 
     def 실행중(self) -> bool:
-        r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq obs64.exe"],
-                           capture_output=True, text=True,
-                           encoding="utf-8", errors="replace")
-        return "obs64.exe" in (r.stdout or "")
+        # CPU 가 100% 일 땐 tasklist 가 실패하거나 늦는다. 그걸 '꺼짐'으로 읽으면
+        # 녹화 중인 OBS 옆에 OBS 를 또 띄운다(11/2 에 세 번). 모르면 켜져 있다고 본다.
+        try:
+            r = subprocess.run(["tasklist", "/NH", "/FO", "CSV", "/FI", "IMAGENAME eq obs64.exe"],
+                               capture_output=True, text=True, timeout=15,
+                               encoding="utf-8", errors="replace")
+        except (subprocess.TimeoutExpired, OSError):
+            return True
+        out = (r.stdout or "").strip()
+        if "obs64.exe" in out:
+            return True
+        # 확실히 '없다'는 건 tasklist 가 성공하고 CSV 행 없이 안내 문구만 낸 경우뿐이다
+        # (안내 문구는 cp949 라 utf-8 로 깨져 읽히므로 글자로 판단하지 않는다)
+        return not (r.returncode == 0 and out and '"' not in out)
 
     def 띄우기(self):
         exe = Path(self.cfg["obs_경로"])
         if not exe.exists():
             log(f"OBS를 찾을 수 없음: {exe}")
             return False
+        # 막 띄웠는데 웹소켓이 아직이면 또 띄우지 않는다 — 과부하일 때 중복 실행을 막는다
+        if time.time() - self.띄운시각 < 600:
+            return False
+        self.띄운시각 = time.time()
         subprocess.Popen([str(exe), "--minimize-to-tray", "--disable-shutdown-check"],
                          cwd=str(exe.parent))
         log("OBS를 띄웠습니다 — 준비될 때까지 기다립니다")
