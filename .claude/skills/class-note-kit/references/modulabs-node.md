@@ -241,6 +241,77 @@ State 스테퍼 5단계·agent/tools 6단계까지 캡처와 내용이 일치했
 
 ---
 
+## 2-3. Mermaid 그림(mermaid.ink 이미지) — 2026-11-09 노드에서 처음 나왔다
+
+인라인 SVG 도 iframe 도 아니고 **`<img src="https://mermaid.ink/img/<base64>">`** 로 들어오는 그림이 있다.
+2-1 절 스캔의 `imgs` 에 `mermaid.ink` 주소로 잡힌다. 바로 다음 문단이 `그림: …` 캡션이다.
+
+**주소 안에 원본이 들어 있다.** `/img/` 뒤 base64 를 풀면 Mermaid 코드가 나온다.
+**같은 base64 로 `/svg/` 를 부르면 벡터 SVG 가 온다** — 다시 그리지 않고 이걸 쓴다.
+
+```bash
+b=<img/ 뒤의 base64>
+python -c "import base64,sys;b=sys.argv[1];print(base64.urlsafe_b64decode(b+'='*(-len(b)%4)).decode())" "$b"   # 원본 Mermaid 코드
+curl -sSL -A "Mozilla/5.0" -o fig1.svg "https://mermaid.ink/svg/$b"
+```
+
+- SVG 첫머리의 `<style xmlns="http://www.w3.org/1999/xhtml">@import url(…font-awesome…)</style>` 는 **지운다** (외부 글꼴을 부른다)
+- 라벨이 `foreignObject` 안의 HTML 이라 2-1 절 규칙(`svg text`)으로는 글꼴이 안 바뀐다. **이렇게 넓힌다.**
+  ```css
+  .nodefig svg, .nodefig svg *{ font-family:var(--kr) !important; }
+  .nodefig foreignObject{ overflow:visible; }
+  .nodefig foreignObject div, .nodefig foreignObject span{ white-space:nowrap; }
+  ```
+- 캡션 문단의 `그림:` 머리말은 떼고 `그림 1-1 · …` 로 단다 (안 떼면 "그림 1-1 · 그림: …" 이 된다)
+- 캡션 출처는 "노드 원문의 도식(Mermaid). 같은 코드를 mermaid.ink 에서 SVG 로 받아 글꼴만 맞춤"
+
+---
+
+## 2-4. 실습 코드는 Monaco 편집기에서 꺼낸다 — `get_page_text` 로는 빠진다
+
+실습 셀(`실습: …` 머리띠 + `실행` 버튼)은 **Monaco 편집기**다. 화면에 그려진 줄만 DOM 에 있어서
+`get_page_text` 가 **코드를 통째로 놓친다.** 11/9 3강 셀은 제목과 `실행` 한 단어만 왔다(코드 41줄이 있었다).
+
+**편집기 모델에서 원문 전체를 꺼낸다.** 강을 연 뒤:
+
+```js
+monaco.editor.getModels().map(m => m.getValue())   // 셀 순서대로, 원문 그대로
+```
+
+- 강을 옮기면 모델이 버려진다 — **강마다 그 자리에서** 꺼내 sessionStorage 에 모은다(2-2 절의 `__cnk` 에 `codes` 로)
+- 순서는 본문의 셀 순서와 같다. 2강처럼 `! pip install …` 한 줄짜리 셀도 하나로 센다
+
+**실행 결과는 페이지에 없다.** `실행 되었습니다.` 는 버튼 상태일 뿐 출력이 저장돼 있다는 뜻이 아니다.
+노드의 `결과 해석` 문단이 출력을 말로 설명하는 것이 전부다.
+
+- 로컬에서 그 코드를 돌려 출력을 얻는 길은 **auto mode 가 막는다**(외부에서 가져온 코드 실행). 우회하지 않는다
+- 셈으로 끝나는 코드(3강 비교표처럼)는 **손으로 따라가 계산해 `[보충]` 상자로** 싣고, 표지와 「수업에서 확인할 것」에 "수업에서 실행해 대조"라고 적는다
+
+---
+
+## 2-5. 본문은 옮겨 적지 말고 HTML 째 모아 스크립트로 조립한다
+
+`get_page_text` 결과를 보고 정리본을 손으로 다시 치면 출력 토큰이 크고, 한 글자라도 어긋날 수 있다.
+**강마다 `main.innerHTML` 을 2-2 절 방식(sessionStorage → COPY ALL 버튼 → 클립보드)으로 모은다.**
+
+```js
+__cnk.grabHtml = n => { const all = JSON.parse(sessionStorage.getItem('__cnk') || '{}');
+  all[n] = Object.assign(all[n] || {}, {html: document.querySelector('main').innerHTML, page: document.title, url: location.href});
+  sessionStorage.setItem('__cnk', JSON.stringify(all)); };
+```
+
+조립은 BeautifulSoup 로 한다. 본문은 `#node-list` 아래 `div.mx-auto` 블록이고, 블록마다 **둘 중 하나**다.
+
+| 블록 | 알아보는 법 | 옮기는 법 |
+|---|---|---|
+| 글 | `.markdown` 이 있다 | `h1·h2 → h3`, `h3 → h4`. `p·table·blockquote·ul/ol` 은 클래스만 지우고 글자 그대로. 코드 블록은 `.token-line` 을 줄바꿈으로 이어 `<pre>` |
+| 실습 셀 | `.monaco-editor` 가 있다 | 머리띠 `div.rounded-8 p` 가 제목, 코드는 2-4 절의 `codes` 에서 순서대로 하나씩 |
+
+**조립한 뒤 대조한다** — 원문의 `.markdown` 안 `p·li·td·th·h1~h3·pre` 와 코드 셀 전부를, 공백을 지운 문자열로
+정리본 텍스트 안에서 찾는다. **missing 0 이어야 한다** (11/9: 193개 중 0). `keyline` 도 같은 식으로 원문에 있는지 assert 한다.
+
+---
+
 ## 3. 접힌 블록을 반드시 펼친다 — 여기가 제일 잘 빠진다
 
 노드에는 접혀 있는 토글이 있다. 제목에 이런 이모지가 붙는다.
@@ -328,3 +399,7 @@ L∝N
 | `python -I` 에서 한글 출력이 `UnicodeEncodeError` | `-I` 가 `PYTHONIOENCODING` 을 무시한다 | 스크립트 안에서 `sys.stdout.reconfigure(encoding='utf-8')` |
 | 내려받은 사진이 2KB 남짓 | `thumb/` 주소가 403 | 원본 주소로 재시도. `file` 로 확인 |
 | PDF 에 Arial 같은 글꼴이 섞임 | SVG 내부 글꼴 지정 | `.nodefig svg text { … !important }` |
+| `imgs` 에 `mermaid.ink` 주소가 잡힘 | Mermaid 그림을 이미지로 띄웠다 | **2-3절** — 같은 base64 로 `/svg/` 를 받는다 |
+| 실습 셀이 제목과 `실행` 만 옴 | Monaco 편집기라 보이는 줄만 DOM 에 있다 | **2-4절** — `monaco.editor.getModels()` |
+| 코드 셀 출력이 없음 | 페이지에 실행 결과가 저장되지 않는다 | 손 계산은 `[보충]`, 나머지는 「수업에서 확인할 것」 |
+| PDF 에 MalgunGothic 이 섞임 | `›`(U+203A) 같은 기호 | `>` 로 바꾼다 (11/9 표지의 경로 표기) |

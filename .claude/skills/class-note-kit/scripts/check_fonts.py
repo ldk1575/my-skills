@@ -33,9 +33,11 @@ OK = re.compile(r"(KoPubWorld|Consolas|D2Coding)", re.I)
 def fonts_in(path):
     """PDF 원본에서 서브셋 글꼴 이름(ABCDEF+Name)을 뽑는다."""
     data = open(path, "rb").read()
+    # /BaseFont·/FontName 자리만 본다. 맨 패턴으로 찾으면 이미지 압축 바이트가
+    # "KJNSTH+R" 처럼 우연히 걸린다 (2026-10-28 정리본에서 실제로 잡혔다)
     names = sorted(set(
         m.decode("latin-1")
-        for m in re.findall(rb"[A-Z]{6}\+[A-Za-z0-9\-]+", data)
+        for m in re.findall(rb"/(?:BaseFont|FontName)\s*/([A-Z]{6}\+[A-Za-z0-9\-]+)", data)
     ))
     return [n.split("+", 1)[1] for n in names]
 

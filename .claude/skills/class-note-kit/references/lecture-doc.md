@@ -134,6 +134,7 @@ python -c "import collections;s=open('X.html',encoding='utf-8').read();c=collect
 | `∞` | U+221E | 무한대 | "무한대" / "음의 무한대" |
 | `▸` | U+25B8 | 삼각 불릿 | `·` 또는 목록으로 |
 | `⚠` | U+26A0 | 경고 | `※` |
+| `›` | U+203A | 경로 구분 (`A › B`) | `>` (2026-11-09 표지에서 MalgunGothic 폴백) |
 | `☐` | U+2610 | 빈 네모 | CSS로 그린다 (`.check li::before`) |
 | `💡` `🎯` … | — | 이모지 | 글자로 바꾼다 |
 
